@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% block title %}Rent Forecast Results | PHRentPredict{% endblock %}
+{% block content %}
+<!-- Results Header -->
+<section class="pt-24 pb-16 gradient-bg">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-8" data-aos="fade-up">
+            <!-- Back Button -->
+            <a href="/" class="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium mb-6 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Predictor
+            </a>
+            <h1 class="text-3xl md:text-4xl font-bold mb-4">Your Rent Forecast Results</h1>
+            <p class="text-xl text-accent-600 dark:text-accent-300 max-w-2xl mx-auto">
+                Forecast for <span class="font-semibold text-primary-600">{{ input_data.neighborhood | default('Unknown') }}</span> -
+                <span class="font-semibold text-primary-600">{{ input_data.property_type.replace('_', ' ').title() | default('Unknown') }}</span> over
+                <span class="font-semibold text-primary-600">{{ input_data.horizon_years | default(3) }} year{{ 's' if input_data.horizon_years | default(3) > 1 else '' }}</span>
+            </p>
+        </div>
+    </div>
+</section>
+<!-- Prediction Results -->
+<section class="py-12 bg-white dark:bg-accent-800">
+    <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Main Prediction Card -->
+            <div class="bg-gradient-to-r from-primary-500 to-secondary-500 rounded-2xl p-8 text-white shadow-2xl mb-8 transform -translate-y-8" data-aos="fade-up">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2">Predicted Average Annual Rent</h2>
+                        <p class="text-primary-100">Based on current trends and economic factors</p>
+                    </div>
+                    <div class="text-center mt-4 md:mt-0">
+                        <div class="text-4xl md:text-5xl font-bold">₦{{ "{:,.0f}".format(result.predicted_rent | default(0)) }}</div>
+                        <div class="text-primary-100 mt-2">Confidence: {{ confidence | default(0) | round(1) }}% (₦{{ "{:,.0f}".format(result.confidence_lower | default(0)) }} - ₦{{ "{:,.0f}".format(result.confidence_upper | default(0)) }})</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Charts and Metrics Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <!-- Trend Chart -->
+                <div class="bg-accent-50 dark:bg-accent-700 rounded-2xl p-6 shadow-lg" data-aos="fade-right">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-primary-500 mr-3"></i>
+                        Rent Trend Forecast
+                    </h3>
+                    <div class="h-80">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <p class="text-sm text-accent-600 dark:text-accent-400 mt-4">
+                        Historical and projected rent trends for {{ input_data.neighborhood | default('Unknown') }}. Actual data spans historical years; Predicted, Upper CI, and Lower CI cover the forecast period.
+                    </p>
+                </div>
+                <!-- Feature Importance -->
+                <div class="bg-accent-50 dark:bg-accent-700 rounded-2xl p-6 shadow-lg" data-aos="fade-left">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-chart-bar text-secondary-500 mr-3"></i>
+                        Key Influencing Factors
+                    </h3>
+                    <div class="h-80">
+                        <canvas id="featureChart"></canvas>
+                    </div>
+                    <p class="text-sm text-accent-600 dark:text-accent-400 mt-4">
+                        Factors most influencing rent prices in this area.
+                    </p>
+                </div>
+            </div>
+            <!-- Cost Breakdown -->
+            <div class="bg-accent-50 dark:bg-accent-700 rounded-2xl p-6 shadow-lg mb-12" data-aos="fade-up">
+                <h3 class="text-xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-calculator text-primary-500 mr-3"></i>
+                    Total Move-In Cost Breakdown
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-accent-300 dark:border-accent-600">
+                                <th class="pb-3 font-semibold">Cost Component</th>
+                                <th class="pb-3 font-semibold">Percentage</th>
+                                <th class="pb-3 font-semibold">Amount (NGN)</th>
+                                <th class="pb-3 font-semibold">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-accent-200 dark:border-accent-600">
+                                <td class="py-3 font-medium">Annual Rent</td>
+                                <td class="py-3">{{ rent_portion_pct | default(0) | round(1) }}%</td>
+                                <td class="py-3 font-bold">₦{{ "{:,.0f}".format(result.predicted_rent | default(0)) }}</td>
+                                <td class="py-3 text-accent-600 dark:text-accent-400">Base annual rent</td>
+                            </tr>
+                            <tr class="border-b border-accent-200 dark:border-accent-600">
+                                <td class="py-3 font-medium">Agent Fee</td>
+                                <td class="py-3">{{ agent_fee_pct | default(0) | round(1) }}%</td>
+                                <td class="py-3">₦{{ "{:,.0f}".format(result.fee_breakdown.agent_fee | default(0)) }}</td>
+                                <td class="py-3 text-accent-600 dark:text-accent-400">Standard 15-30% of annual rent</td>
+                            </tr>
+                            <tr class="border-b border-accent-200 dark:border-accent-600">
+                                <td class="py-3 font-medium">Caution Fee</td>
+                                <td class="py-3">{{ caution_fee_pct | default(0) | round(1) }}%</td>
+                                <td class="py-3">₦{{ "{:,.0f}".format(result.fee_breakdown.caution_fee | default(0)) }}</td>
+                                <td class="py-3 text-accent-600 dark:text-accent-400">Refundable security deposit (1-2 months)</td>
+                            </tr>
+                            <tr class="border-b border-accent-200 dark:border-accent-600">
+                                <td class="py-3 font-medium">Legal/Inspection</td>
+                                <td class="py-3">{{ other_fees_pct | default(0) | round(1) }}%</td>
+                                <td class="py-3">₦{{ "{:,.0f}".format(result.fee_breakdown.legal_inspection_fee | default(0)) }}</td>
+                                <td class="py-3 text-accent-600 dark:text-accent-400">One-time fees for agreement processing</td>
+                            </tr>
+                            <tr class="bg-primary-50 dark:bg-primary-900/20 font-bold">
+                                <td class="py-4">Total Move-In Cost</td>
+                                <td class="py-4">{{ total_fee_pct | default(0) | round(1) }}%</td>
+                                <td class="py-4 text-primary-600 dark:text-primary-400">₦{{ "{:,.0f}".format(result.total_cost | default(0)) }}</td>
+                                <td class="py-4 text-accent-600 dark:text-accent-400">Amount needed to secure property</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Cost Visualization -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-white dark:bg-accent-800 rounded-lg">
+                        <div class="text-sm text-accent-600 dark:text-accent-400 mb-1">Rent Portion</div>
+                        <div class="text-lg font-bold text-primary-600">{{ rent_portion_pct | default(0) | round(1) }}%</div>
+                    </div>
+                    <div class="text-center p-4 bg-white dark:bg-accent-800 rounded-lg">
+                        <div class="text-sm text-accent-600 dark:text-accent-400 mb-1">Agent Fee</div>
+                        <div class="text-lg font-bold text-secondary-600">{{ agent_fee_pct | default(0) | round(1) }}%</div>
+                    </div>
+                    <div class="text-center p-4 bg-white dark:bg-accent-800 rounded-lg">
+                        <div class="text-sm text-accent-600 dark:text-accent-400 mb-1">Other Fees</div>
+                        <div class="text-lg font-bold text-accent-600">{{ other_fees_pct | default(0) | round(1) }}%</div>
+                    </div>
+                    <div class="text-center p-4 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                        <div class="text-sm text-accent-600 dark:text-accent-400 mb-1">Effective Cost</div>
+                        <div class="text-lg font-bold text-primary-600">{{ total_fee_pct | default(0) | round(1) }}%</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Insights and Recommendations -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <!-- Key Insights -->
+                <div class="bg-accent-50 dark:bg-accent-700 rounded-2xl p-6 shadow-lg" data-aos="fade-right">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-lightbulb text-secondary-500 mr-3"></i>
+                        Key Insights
+                    </h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <i class="fas fa-arrow-up text-secondary-500 mt-1 mr-3"></i>
+                            <span>Rent in {{ input_data.neighborhood | default('Unknown') }} is projected to increase by <span class="font-semibold">{{ yoy_increase | default(0) | round(1) }}%</span> annually</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-users text-primary-500 mt-1 mr-3"></i>
+                            <span>Population influx is a <span class="font-semibold">{{ population_impact | default('moderate') }}</span> driver of rent prices in this area</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-bolt text-yellow-500 mt-1 mr-3"></i>
+                            <span>Utility costs contribute approximately <span class="font-semibold">{{ utility_impact | default('moderate') }}</span> to rental expenses</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-briefcase text-accent-600 mt-1 mr-3"></i>
+                            <span>Job market conditions are <span class="font-semibold">{{ job_market_impact | default('moderate') }}</span> affecting housing demand</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Model Performance -->
+                <div class="bg-accent-50 dark:bg-accent-700 rounded-2xl p-6 shadow-lg" data-aos="fade-left">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-tachometer-alt text-primary-500 mr-3"></i>
+                        Model Performance
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Mean Absolute Error (MAE)</span>
+                                <span class="font-semibold">₦{{ "{:,.0f}".format(mae | default(0)) }}</span>
+                            </div>
+                            <div class="w-full bg-accent-200 dark:bg-accent-600 rounded-full h-2">
+                                <div class="bg-primary-500 h-2 rounded-full" style="width: {{ 100 - (mae | default(0) / (result.predicted_rent | default(1)) * 100) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Root Mean Square Error (RMSE)</span>
+                                <span class="font-semibold">₦{{ "{:,.0f}".format(rmse | default(0)) }}</span>
+                            </div>
+                            <div class="w-full bg-accent-200 dark:bg-accent-600 rounded-full h-2">
+                                <div class="bg-secondary-500 h-2 rounded-full" style="width: {{ 100 - (rmse | default(0) / (result.predicted_rent | default(1)) * 100) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Mean Absolute Percentage Error (MAPE)</span>
+                                <span class="font-semibold">{{ mape | default(0) | round(1) }}%</span>
+                            </div>
+                            <div class="w-full bg-accent-200 dark:bg-accent-600 rounded-full h-2">
+                                <div class="bg-primary-500 h-2 rounded-full" style="width: {{ 100 - (mape | default(0)) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-accent-600 dark:text-accent-400 mt-4">
+                        Lower values indicate better prediction accuracy. Our target is MAPE < 15%.
+                    </p>
+                </div>
+            </div>
+            <!-- Action Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white dark:bg-accent-800 rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-14 h-14 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-redo-alt text-primary-600 text-xl"></i>
+                    </div>
+                    <h4 class="font-bold mb-2">New Prediction</h4>
+                    <p class="text-accent-600 dark:text-accent-400 mb-4 text-sm">Try a different neighborhood or property type</p>
+                    <a href="/" class="inline-block bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                        Start Over
+                    </a>
+                </div>
+                <div class="bg-white dark:bg-accent-800 rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-14 h-14 rounded-full bg-secondary-100 dark:bg-secondary-900/30 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-download text-secondary-600 text-xl"></i>
+                    </div>
+                    <h4 class="font-bold mb-2">Export Results</h4>
+                    <p class="text-accent-600 dark:text-accent-400 mb-4 text-sm">Download this forecast as a PDF report</p>
+                    <button onclick="window.print()" class="inline-block bg-secondary-500 hover:bg-secondary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                        Export PDF
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-accent-800 rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-14 h-14 rounded-full bg-accent-100 dark:bg-accent-700 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-share-alt text-accent-700 dark:text-accent-300 text-xl"></i>
+                    </div>
+                    <h4 class="font-bold mb-2">Share Results</h4>
+                    <p class="text-accent-600 dark:text-accent-400 mb-4 text-sm">Share this forecast with others</p>
+                    <button class="inline-block bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                        Share
+                    </button>
+                </div>
+            </div>
+            <!-- Disclaimer -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6" data-aos="fade-up">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="font-bold text-yellow-800 dark:text-yellow-200 mb-2">Important Disclaimer</h4>
+                        <p class="text-yellow-700 dark:text-yellow-300 text-sm">
+                            These predictions are based on statistical models and historical data. Actual rent prices may vary due to unforeseen economic changes, policy decisions, or market disruptions. This information should be used for guidance purposes only and does not constitute financial advice. Always verify current market conditions before making housing decisions.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Related Forecasts -->
+<section class="py-16 gradient-bg">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-12" data-aos="fade-up">
+            <h2 class="text-3xl font-bold mb-4">Compare With Other Areas</h2>
+            <p class="text-xl text-accent-600 dark:text-accent-300 max-w-2xl mx-auto">
+                See how {{ input_data.neighborhood | default('Unknown') }} compares to other popular neighborhoods in Port Harcourt.
+            </p>
+        </div>
+        <div class="max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for comp in result.comparisons | default([]) %}
+                <div class="bg-white dark:bg-accent-800 rounded-xl p-6 shadow-lg" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+                    <h3 class="font-bold mb-2 text-lg">{{ comp.neighborhood | default('Unknown') }}</h3>
+                    <div class="text-2xl font-bold text-primary-600 mb-2">₦{{ "{:,.0f}".format(comp.avg_rent | default(0)) }}</div>
+                    <div class="text-sm text-accent-600 dark:text-accent-400 mb-4">{{ comp.property_type.replace('_', ' ').title() | default('Unknown') }} (avg)</div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-arrow-up text-secondary-500 mr-1"></i>
+                        <span class="text-secondary-600 font-medium">{{ comp.yoy_increase | default(0) | round(1) }}% YoY</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-accent-600 dark:text-accent-400">
+                    <p>No comparison data available.</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-8">
+                <a href="/" class="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold transition-colors">
+                    <i class="fas fa-chart-line mr-2"></i> Create New Forecast
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    AOS.init({
+        duration: 800,
+        once: true
+    });
+
+    // Trend Chart
+    const trendData = {{ result.charts.trends | tojson | safe }};
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    const trendDatasets = [];
+    if (trendData && trendData.data && Array.isArray(trendData.data)) {
+        trendData.data.forEach(trace => {
+            if (trace.x && trace.y && trace.x.length === trace.y.length) {
+                const dataset = {
+                    label: trace.name || 'Unknown',
+                    data: trace.y.map(val => Number(val)),
+                    borderColor: trace.color || '#339d70',
+                    backgroundColor: (trace.color || '#339d70') + '33',
+                    borderDash: trace.dash === 'dash' ? [5, 5] : [],
+                    fill: trace.fill === 'tonexty' ? true : false,
+                    tension: 0.3
+                };
+                // Ensure CI traces are filled correctly
+                if (trace.name === 'Upper CI' || trace.name === 'Lower CI') {
+                    dataset.fill = 'origin'; // Fill to axis for CI bands
+                    dataset.backgroundColor = (trace.color || '#339d70') + '20';
+                }
+                trendDatasets.push(dataset);
+            }
+        });
+    }
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendDatasets.length > 0 ? trendData.data[0].x : [],
+            datasets: trendDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true } },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            const value = context.parsed.y;
+                            return label + new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(value);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--colors-accent-600') || '#71737e' }
+                },
+                y: {
+                    beginAtZero: false,
+                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                    ticks: {
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--colors-accent-600') || '#71737e',
+                        callback: function(value) {
+                            if (value >= 1000000) return '₦' + (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return '₦' + (value / 1000).toFixed(0) + 'K';
+                            return '₦' + value;
+                        }
+                    }
+                }
+            },
+            interaction: { intersect: false, mode: 'nearest' }
+        }
+    });
+
+    // Feature Importance Chart
+    const featureData = {{ result.charts.feature_importance | tojson | safe }};
+    const featureCtx = document.getElementById('featureChart').getContext('2d');
+    let featureDataset = [];
+    if (featureData && featureData.data && Array.isArray(featureData.data) && featureData.data[0]) {
+        featureDataset = [{
+            label: 'Impact on Rent Prices',
+            data: featureData.data[0].y.map(val => Number(val)),
+            backgroundColor: (featureData.data[0].color || '#2ca02c') + '7F',
+            borderColor: featureData.data[0].color || '#2ca02c',
+            borderWidth: 1
+        }];
+    }
+    new Chart(featureCtx, {
+        type: 'bar',
+        data: {
+            labels: featureData && featureData.data && featureData.data[0] ? featureData.data[0].x : [],
+            datasets: featureDataset
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + '% impact on rent prices';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: featureDataset.length > 0 ? Math.max(...featureDataset[0].data) * 1.2 : 100,
+                    ticks: {
+                        color: getComputedStyle(document.documentElement).getPropertyValue('--colors-accent-600') || '#71737e',
+                        callback: value => value + '%'
+                    }
+                },
+                x: {
+                    ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--colors-accent-600') || '#71737e' }
+                }
+            }
+        }
+    });
+
+    // Update charts on theme change
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            setTimeout(() => {
+                trendChart.update();
+                featureChart.update();
+            }, 100);
+        });
+    }
+});
+</script>
+{% endblock %}

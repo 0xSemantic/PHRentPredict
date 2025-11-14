@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PHRentPredict - Port Harcourt Rent Trend Forecast{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Colors & Theme -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9f4',
+                            100: '#dcf2e6',
+                            200: '#bce5d0',
+                            300: '#8dd2b0',
+                            400: '#57b88c',
+                            500: '#339d70',
+                            600: '#258159',
+                            700: '#1e6749',
+                            800: '#1a523b',
+                            900: '#164432',
+                        },
+                        secondary: {
+                            50: '#fef6ee',
+                            100: '#fdead7',
+                            200: '#fbd1ae',
+                            300: '#f8b07a',
+                            400: '#f48343',
+                            500: '#f1631d',
+                            600: '#e24913',
+                            700: '#bb3612',
+                            800: '#952c17',
+                            900: '#782716',
+                        },
+                        accent: {
+                            50: '#f3f3f4',
+                            100: '#e7e8e9',
+                            200: '#c4c5c9',
+                            300: '#9a9ca4',
+                            400: '#71737e',
+                            500: '#565862',
+                            600: '#444550',
+                            700: '#393a43',
+                            800: '#2f3037',
+                            900: '#28292f',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9f4 0%, #fef6ee 100%);
+        }
+        .dark .gradient-bg {
+            background: linear-gradient(135deg, #164432 0%, #782716 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .dark .glass-effect {
+            background: rgba(30, 30, 30, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sticker {
+            transform: rotate(-5deg);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .dark .sticker {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-accent-900 text-accent-900 dark:text-accent-100 transition-colors duration-300">
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="fixed top-4 right-4 z-50 p-3 rounded-full bg-primary-500 text-white shadow-lg hover:bg-primary-600 transition-all duration-300">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 glass-effect">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-home text-white"></i>
+                </div>
+                <span class="text-xl font-bold text-primary-600 dark:text-primary-400">PHRentPredict</span>
+            </div>
+            
+            <nav class="hidden md:flex space-x-8">
+                <a href="#features" class="hover:text-primary-500 transition-colors">Features</a>
+                <a href="#how-it-works" class="hover:text-primary-500 transition-colors">How It Works</a>
+                <a href="#neighborhoods" class="hover:text-primary-500 transition-colors">Neighborhoods</a>
+                <a href="#faq" class="hover:text-primary-500 transition-colors">FAQ</a>
+            </nav>
+            
+            <button class="md:hidden text-accent-700 dark:text-accent-300">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-accent-800 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4 text-primary-300">PHRentPredict</h3>
+                    <p class="text-accent-300">Forecasting Port Harcourt rent trends to help you make informed housing decisions.</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-accent-300">
+                        <li><a href="/" class="hover:text-primary-300 transition-colors">Home</a></li>
+                        <li><a href="#features" class="hover:text-primary-300 transition-colors">Features</a></li>
+                        <li><a href="#how-it-works" class="hover:text-primary-300 transition-colors">How It Works</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Property Types</h4>
+                    <ul class="space-y-2 text-accent-300">
+                        <li>Single Rooms</li>
+                        <li>Self-Contained</li>
+                        <li>1-3 Bedroom Apartments</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-accent-700 flex items-center justify-center hover:bg-primary-500 transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-accent-700 flex items-center justify-center hover:bg-primary-500 transition-colors">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-accent-700 flex items-center justify-center hover:bg-primary-500 transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-accent-700 mt-8 pt-8 text-center text-accent-400">
+                <p>&copy; 2025 PHRentPredict. All rights reserved. | 
+                   <span class="text-accent-500">Disclaimer: Predictions are based on statistical models and not financial advice.</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Theme Toggle
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('themeIcon');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+            
+            // Save theme preference
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        
+        // Check for saved theme preference
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.getElementById('themeIcon').classList.remove('fa-moon');
+            document.getElementById('themeIcon').classList.add('fa-sun');
+        }
+        
+        // Initialize AOS animations
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({
+                duration: 800,
+                once: true,
+                offset: 100
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

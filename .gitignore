@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+env/
+.env
+*.csv
+*.joblib
+data/charts/*
+data/models/*
+*.log
+.DS_Store
+.venv
+docs
+init_structure.sh 
