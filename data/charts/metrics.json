@@ -1,0 +1,52 @@
+{
+  "data": [
+    {
+      "x": [
+        "1_bed",
+        "2_bed",
+        "3_bed",
+        "self_contained",
+        "single_room"
+      ],
+      "y": [
+        299539.82,
+        641200.99,
+        959744.99,
+        218921.04,
+        44803.34
+      ],
+      "type": "bar",
+      "name": "MAE",
+      "color": "#1f77b4"
+    },
+    {
+      "x": [
+        "1_bed",
+        "2_bed",
+        "3_bed",
+        "self_contained",
+        "single_room"
+      ],
+      "y": [
+        326334.18,
+        727517.01,
+        1157828.86,
+        244589.42,
+        54983.9
+      ],
+      "type": "bar",
+      "name": "RMSE",
+      "color": "#ff7f0e"
+    }
+  ],
+  "layout": {
+    "title": "Model Performance by Property Type",
+    "xaxis": {
+      "title": "Property Type"
+    },
+    "yaxis": {
+      "title": "Error (NGN)"
+    },
+    "barmode": "group"
+  }
+}

@@ -3,9 +3,6 @@ __pycache__/
 env/
 .env
 *.csv
-*.joblib
-data/charts/*
-data/models/*
 *.log
 .DS_Store
 .venv

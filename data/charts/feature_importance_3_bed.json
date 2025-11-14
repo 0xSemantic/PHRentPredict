@@ -1,0 +1,36 @@
+{
+  "data": [
+    {
+      "x": [
+        "inflation_rate",
+        "oil_price_usd",
+        "population_influx_rate",
+        "nepa_bill_avg",
+        "job_vacancy_proxy",
+        "economic_score",
+        "prev_year_rent"
+      ],
+      "y": [
+        114727.41,
+        197787.65,
+        217046.69,
+        142189.0,
+        65598.21,
+        114670.02,
+        142502.99
+      ],
+      "type": "bar",
+      "name": "3_bed",
+      "color": "#2ca02c"
+    }
+  ],
+  "layout": {
+    "title": "Feature Importance: 3_bed",
+    "xaxis": {
+      "title": "Feature"
+    },
+    "yaxis": {
+      "title": "SHAP Value"
+    }
+  }
+}
