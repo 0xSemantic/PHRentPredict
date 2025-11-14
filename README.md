@@ -77,7 +77,7 @@ The system follows a **client-server architecture** with a **FastAPI** backend a
 ## Technologies Used
 
 - **Backend**:
-  - Python 3.8+
+  - Python 3.10+
   - FastAPI: Asynchronous web framework
   - Uvicorn: ASGI server
   - Jinja2: Template engine
@@ -322,24 +322,3 @@ Please follow coding standards, add tests for new features, and update documenta
 ## License
 
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-
----
-
-### Notes
-- **GitHub URL**: I assumed a placeholder URL (`https://github.com/0xSemantic/phrentpredict`). Replace with the actual repository URL when hosting the project.
-- **Backend Implementation**: The README assumes the `/predict/html` endpoint is implemented in `main.py`. If not, you may need to add placeholder logic or clarify in the README that it’s a work-in-progress.
-- **Chart Data**: The hero chart uses static data matching the original (2025 values: ₦220K, ₦700K, ₦1.5M). If you want to align with the displayed averages (₦185K, ₦550K, ₦1.2M), I can provide an updated `index.html`.
-- **Dependencies in `base.html`**: The setup assumes Chart.js, Tailwind CSS, Font Awesome, and AOS are included in `base.html`. If your `base.html` differs, share its content for tailored instructions.
-- **Testing**: The testing section covers the hero chart fix from your previous request, ensuring it renders with static data.
-
-### Next Steps
-1. **Create the Repository**:
-   - Initialize a GitHub repository: `git init`, `git add .`, `git commit -m "Initial commit"`, `git remote add origin <url>`, `git push -u origin main`.
-   - Upload `app/`, `requirements.txt`, and this `README.md`.
-2. **Share Feedback**:
-   - If you need additions to the README (e.g., backend details, deployment instructions), let me know.
-   - If the chart or any feature still doesn’t work, provide console errors or a screenshot.
-3. **Enhancements**:
-   - Add dynamic data fetching for the chart (e.g., via `/trends` endpoint).
-   - Align chart colors with the hero section’s dots (#ef4444, #eab308, #22c55e).
-   - Update 2025 chart values to match displayed averages.
