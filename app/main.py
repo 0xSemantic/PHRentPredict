@@ -3,6 +3,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from app.routers import predict, trends
 from app.config import Config
+from fastapi.staticfiles import StaticFiles
+import os
 
 """
 This file sets up the FastAPI application for the PHRentPredict system.
@@ -27,5 +29,9 @@ async def root(request: Request):
         "index.html",
         {"request": request, "neighborhoods": Config.NEIGHBORHOODS, "property_types": Config.PROPERTY_TYPES}
     )
+
+# Add this (create the folder if it doesn't exist yet)
+if os.path.isdir("app/static"):
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Finally, end of code file
