@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from typing import Dict, Tuple
+from pathlib import Path
 
 """
 This file defines configuration settings for the PHRentPredict system.
@@ -12,11 +13,14 @@ File path: app/config.py
 # Load environment variables
 load_dotenv()
 
+# Base project directory (works everywhere)
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 class Config:
     """Configuration class for paths and settings."""
-    MODEL_PATH: str = os.getenv("MODEL_PATH", "data/models/phrent_model.joblib")
-    CHART_PATH: str = os.getenv("CHART_PATH", "data/charts/")
-    DATA_PATH: str = os.getenv("DATA_PATH", "data/ph_rent_trends.csv")
+    MODEL_PATH: str = os.getenv("MODEL_PATH", str(BASE_DIR / "data" / "models" / "phrent_model.joblib"))
+    CHART_PATH: str = os.getenv("CHART_PATH", str(BASE_DIR / "data" / "charts"))
+    DATA_PATH: str = os.getenv("DATA_PATH", str(BASE_DIR / "data" / "ph_rent_trends.csv"))
     
     # Fee ranges for total cost calculation
     FEE_RANGES: Dict[str, Tuple[float, float]] = {

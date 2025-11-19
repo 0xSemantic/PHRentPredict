@@ -4,6 +4,8 @@ import numpy as np
 from typing import Dict, List
 import os
 import json
+from pathlib import Path
+from app.config import Config
 
 """
 This file generates evaluation charts for the PHRentPredict system.
@@ -20,27 +22,15 @@ class ChartService:
         charts_dir (str): Directory to save JSON charts.
     """
 
-    def __init__(self, data_path: str = 'data/ph_rent_trends.csv',
-                 charts_dir: str = 'data/charts/') -> None:
-        """Initialize chart service with data and output paths.
-        
-        Args:
-            data_path (str): Path to preprocessed CSV.
-            charts_dir (str): Directory to save charts.
-        """
-        self.data_path = data_path
-        self.charts_dir = charts_dir
-        self.df = pd.read_csv(data_path)
-        os.makedirs(charts_dir, exist_ok=True)
+    def __init__(self) -> None:
+        """Initialize chart service with data and output paths from Config."""
+        self.data_path = Config.DATA_PATH
+        self.charts_dir = Path(Config.CHART_PATH)
+        self.df = pd.read_csv(self.data_path)
+        self.charts_dir.mkdir(parents=True, exist_ok=True)
         print(f"Initialized ChartService with data: {len(self.df)} rows")
 
     def generate_trends_chart(self, property_type: str, predictions: pd.DataFrame) -> None:
-        """Generate line chart of actual vs. predicted rents.
-        
-        Args:
-            property_type (str): Property type to plot.
-            predictions (pd.DataFrame): Prophet forecast DataFrame.
-        """
         df_type = self.df[self.df['property_type'] == property_type]
         actual = df_type[['date', 'avg_annual_rent_ngn']].rename(
             columns={'date': 'ds', 'avg_annual_rent_ngn': 'y'}
@@ -48,7 +38,6 @@ class ChartService:
         actual['ds'] = pd.to_datetime(actual['ds']).dt.strftime('%Y-%m-%d')
         predictions['ds'] = pd.to_datetime(predictions['ds']).dt.strftime('%Y-%m-%d')
 
-        # Aggregate duplicates by taking the mean
         actual = actual.groupby('ds', as_index=False).agg({'y': 'mean'})
         predictions = predictions.groupby('ds', as_index=False).agg({
             'yhat': 'mean', 'yhat_lower': 'mean', 'yhat_upper': 'mean'
@@ -94,18 +83,12 @@ class ChartService:
                 "yaxis": {"title": "Rent (NGN)"}
             }
         }
-        output_path = os.path.join(self.charts_dir, f'trends_{property_type}.json')
+        output_path = self.charts_dir / f'trends_{property_type}.json'
         with open(output_path, 'w') as f:
             json.dump(chart_data, f, indent=2)
         print(f"Saved trends chart for {property_type} to {output_path}")
 
     def generate_residuals_chart(self, property_type: str, predictions: pd.DataFrame) -> None:
-        """Generate scatter plot of residuals.
-        
-        Args:
-            property_type (str): Property type to plot.
-            predictions (pd.DataFrame): Prophet forecast DataFrame.
-        """
         df_type = self.df[self.df['property_type'] == property_type]
         actual = df_type[['date', 'avg_annual_rent_ngn']].rename(
             columns={'date': 'ds', 'avg_annual_rent_ngn': 'y'}
@@ -130,17 +113,12 @@ class ChartService:
                 "shapes": [{"type": "line", "x0": merged['ds'].min(), "x1": merged['ds'].max(), "y0": 0, "y1": 0, "line": {"color": "red", "dash": "dash"}}]
             }
         }
-        output_path = os.path.join(self.charts_dir, f'residuals_{property_type}.json')
+        output_path = self.charts_dir / f'residuals_{property_type}.json'
         with open(output_path, 'w') as f:
             json.dump(chart_data, f, indent=2)
         print(f"Saved residuals chart for {property_type} to {output_path}")
 
     def generate_metrics_chart(self, metrics: Dict[str, Dict[str, float]]) -> None:
-        """Generate bar chart of MAE and RMSE by property type.
-        
-        Args:
-            metrics (dict): Metrics dictionary from MLModel.evaluate.
-        """
         property_types = list(metrics.keys())
         mae_values = [metrics[pt]['MAE'] for pt in property_types]
         rmse_values = [metrics[pt]['RMSE'] for pt in property_types]
@@ -169,17 +147,12 @@ class ChartService:
                 "barmode": "group"
             }
         }
-        output_path = os.path.join(self.charts_dir, 'metrics.json')
+        output_path = self.charts_dir / 'metrics.json'
         with open(output_path, 'w') as f:
             json.dump(chart_data, f, indent=2)
         print(f"Saved metrics chart to {output_path}")
 
     def generate_feature_importance_chart(self, importance: Dict[str, Dict[str, float]]) -> None:
-        """Generate bar chart of SHAP feature importance.
-        
-        Args:
-            importance (dict): Feature importance from MLModel.explain.
-        """
         for prop_type, imp in importance.items():
             features = list(imp.keys())
             values = [float(v) for v in imp.values()]
@@ -197,7 +170,7 @@ class ChartService:
                     "yaxis": {"title": "SHAP Value"}
                 }
             }
-            output_path = os.path.join(self.charts_dir, f'feature_importance_{prop_type}.json')
+            output_path = self.charts_dir / f'feature_importance_{prop_type}.json'
             with open(output_path, 'w') as f:
                 json.dump(chart_data, f, indent=2)
             print(f"Saved feature importance chart for {prop_type} to {output_path}")

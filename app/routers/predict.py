@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from app.config import Config
+from pathlib import Path
 
 """
 This file defines the prediction endpoint for the PHRentPredict system.
@@ -82,7 +83,6 @@ async def predict_rent_html(request: Request, input_data: PredictInput = Depends
 
         # Feature impacts (from SHAP values or defaults)
         try:
-            # Assume explain() takes prediction input or feature vector
             features = {
                 'neighborhood': input_data.neighborhood,
                 'property_type': input_data.property_type,
@@ -93,7 +93,7 @@ async def predict_rent_html(request: Request, input_data: PredictInput = Depends
                 'nepa_bill_avg': df['nepa_bill_avg'].mean(),
                 'job_vacancy_proxy': df['job_vacancy_proxy'].mean()
             }
-            shap_values = ml_model.explain(features)  # Adjust based on actual signature
+            shap_values = ml_model.explain(features)
         except Exception as e:
             logger.warning(f"SHAP explanation failed: {e}. Using default impacts.")
             shap_values = {
@@ -110,27 +110,30 @@ async def predict_rent_html(request: Request, input_data: PredictInput = Depends
         impacts = {}
         for feat, impact_key in feature_map.items():
             impact_value = np.abs(shap_values.get(feat, 0.0))
-            if impact_value > 0.1:  # Threshold for 'high'
+            if impact_value > 0.1:
                 impacts[impact_key] = 'high'
             elif impact_value > 0.05:
                 impacts[impact_key] = 'moderate'
             else:
                 impacts[impact_key] = 'low'
 
-        # Load charts
-        trends_path = os.path.join('data/charts', f'trends_{input_data.property_type}.json')
-        feature_path = os.path.join('data/charts', f'feature_importance_{input_data.property_type}.json')
+        # Load charts – now using pathlib for OS-safe paths
+        charts_dir = Path(Config.CHART_PATH)
+        trends_path = charts_dir / f'trends_{input_data.property_type}.json'
+        feature_path = charts_dir / f'feature_importance_{input_data.property_type}.json'
         charts = {
             'trends': {'data': []},
             'feature_importance': {'data': []}
         }
         try:
-            with open(trends_path, 'r') as f:
-                charts['trends'] = json.load(f)
-                logger.info(f"Loaded chart from {trends_path}: {charts['trends'].keys()}")
-            with open(feature_path, 'r') as f:
-                charts['feature_importance'] = json.load(f)
-                logger.info(f"Loaded chart from {feature_path}: {charts['feature_importance'].keys()}")
+            if trends_path.exists():
+                with open(trends_path, 'r') as f:
+                    charts['trends'] = json.load(f)
+                    logger.info(f"Loaded chart from {trends_path}")
+            if feature_path.exists():
+                with open(feature_path, 'r') as f:
+                    charts['feature_importance'] = json.load(f)
+                    logger.info(f"Loaded chart from {feature_path}")
         except Exception as e:
             logger.error(f"Error loading charts: {e}")
 
